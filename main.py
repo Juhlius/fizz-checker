@@ -45,33 +45,4 @@ def check_page():
         text = soup.get_text()
 
         no_listing_text = "Currently no Single Studio apartments available."
-        current_state = "no_listings" if no_listing_text in text else "new_listing"
-        last_state = read_last_state()
-
-        if True:  # force detection
-    send_telegram("🚨 TEST: New listing detected!")
-    print(f"[{time.strftime('%H:%M:%S')}] TEST alert sent.")
-    write_last_state("new_listing")
-else:
-    # normal behavior
-    if current_state != last_state:
-        if current_state == "new_listing":
-            send_telegram("🚨 New listing detected on THE FIZZ Utrecht!")
-            print(f"[{time.strftime('%H:%M:%S')}] New listing detected — Telegram sent.")
-        else:
-            print(f"[{time.strftime('%H:%M:%S')}] Listings disappeared again.")
-        write_last_state(current_state)
-    else:
-        print(f"[{time.strftime('%H:%M:%S')}] No change.")
-
-    except Exception as e:
-        print(f"[{time.strftime('%H:%M:%S')}] Error checking page:", e)
-
-# -------------------------
-# MAIN LOOP
-# -------------------------
-print("🚀 FIZZ checker started")
-
-while True:
-    check_page()
-    time.sleep(300)  # 5 minutes
+        current_state = "no_listings" if no_listing_text in text else
