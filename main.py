@@ -48,10 +48,11 @@ def check_page():
         current_state = "no_listings" if no_listing_text in text else "new_listing"
         last_state = read_last_state()
 
-        if current_state != last_state:
-            if current_state == "new_listing":
-                send_telegram("🚨 New listing detected on THE FIZZ Utrecht!")
-                print(f"[{time.strftime('%H:%M:%S')}] New listing detected — Telegram sent.")
+        if True:  # force detection
+            send_telegram("🚨 TEST: New listing detected!")
+            print(f"[{time.strftime('%H:%M:%S')}] TEST alert sent.")
+            write_last_state("new_listing")  # update state so next check won't repeat
+
             else:
                 print(f"[{time.strftime('%H:%M:%S')}] Listings disappeared again.")
             write_last_state(current_state)
