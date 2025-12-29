@@ -10,7 +10,7 @@ URL = "https://www.the-fizz.com/en/student-accommodation/utrecht/#apartment"
 TELEGRAM_BOT_TOKEN = "8508989655:AAFjb044Rugm__f-08zudu2ijsopIkaV98E"
 TELEGRAM_CHAT_ID = "6760011689"
 STATE_FILE = "last_state.txt"  # file to remember last listing state
-TEST_MODE = True  # set to True to force a Telegram test alert, False for normal operation
+TEST_MODE = False  # set to True to force a Telegram test alert, False for normal operation
 
 # -------------------------
 # FUNCTION TO SEND TELEGRAM MESSAGE
