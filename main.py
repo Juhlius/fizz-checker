@@ -53,8 +53,8 @@ def check_page():
             print(f"[{time.strftime('%H:%M:%S')}] TEST alert sent.")
             write_last_state("new_listing")  # update state so next check won't repeat
 
-            else:
-                print(f"[{time.strftime('%H:%M:%S')}] Listings disappeared again.")
+        else:
+            print(f"[{time.strftime('%H:%M:%S')}] Listings disappeared again.")
             write_last_state(current_state)
         else:
             print(f"[{time.strftime('%H:%M:%S')}] No change.")
