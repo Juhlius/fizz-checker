@@ -12,6 +12,13 @@ TELEGRAM_CHAT_ID = "6760011689"
 STATE_FILE = "last_state.txt"  # file to remember last listing state
 TEST_MODE = False  # set to True to force a Telegram test alert, False for normal operation
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                  "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+                  "Version/18.0 Safari/605.1.15",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
 # -------------------------
 # FUNCTION TO SEND TELEGRAM MESSAGE
 # -------------------------
