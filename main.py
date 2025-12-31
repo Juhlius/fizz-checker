@@ -1,91 +1,108 @@
 import time
-import requests
-from bs4 import BeautifulSoup
 import os
+import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
 
 # -------------------------
 # CONFIGURATION
 # -------------------------
-URL = "https://www.the-fizz.com/en/student-accommodation/utrecht/#apartment"
 TELEGRAM_BOT_TOKEN = "8508989655:AAFjb044Rugm__f-08zudu2ijsopIkaV98E"
 TELEGRAM_CHAT_ID = "6760011689"
-STATE_FILE = "last_state.txt"  # file to remember last listing state
-TEST_MODE = False  # set to True to force a Telegram test alert, False for normal operation
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                  "AppleWebKit/605.1.15 (KHTML, like Gecko) "
-                  "Version/18.0 Safari/605.1.15",
-    "Accept-Language": "en-US,en;q=0.9",
+URL = "https://www.the-fizz.com/en/student-accommodation/utrecht/#apartment"
+STATE_DIR = "states"
+if not os.path.exists(STATE_DIR):
+    os.mkdir(STATE_DIR)
+
+# Button labels
+BUTTON_TEXTS = {
+    "Single Studio": "Single",
+    "Double": "Double"
 }
 
+# Placeholder selector for room listings; update when real rooms appear
+LISTING_SELECTOR = "div.apartment-listing"
+
 # -------------------------
-# FUNCTION TO SEND TELEGRAM MESSAGE
+# TELEGRAM FUNCTION
 # -------------------------
 def send_telegram(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message})
-        print(f"[{time.strftime('%H:%M:%S')}] Telegram message sent.")
+        print(f"[{time.strftime('%H:%M:%S')}] Telegram sent: {message}")
     except Exception as e:
-        print(f"[{time.strftime('%H:%M:%S')}] Error sending Telegram message:", e)
+        print(f"Telegram error: {e}")
 
 # -------------------------
-# FUNCTIONS TO SAVE/READ LAST STATE
+# STATE FUNCTIONS
 # -------------------------
-def read_last_state():
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, "r") as f:
+def read_last_state(key):
+    file_path = os.path.join(STATE_DIR, f"{key}.txt")
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
             return f.read().strip()
-    return ""
+    return "no"
 
-def write_last_state(state):
-    with open(STATE_FILE, "w") as f:
+def write_last_state(key, state):
+    file_path = os.path.join(STATE_DIR, f"{key}.txt")
+    with open(file_path, "w") as f:
         f.write(state)
 
 # -------------------------
-# CHECK THE PAGE
+# CHECK ROOM FUNCTION
 # -------------------------
-def check_page():
+def check_room(driver, room_name, button_text):
     try:
-        response = requests.get(URL, headers=HEADERS, timeout=20)
-        html = response.text.lower()
+        # Click the button based on its visible text
+        try:
+            button = driver.find_element(By.XPATH, f"//button[text()='{button_text}']")
+            button.click()
+            time.sleep(1)  # wait for overlay to appear
+        except:
+            print(f"[{time.strftime('%H:%M:%S')}] Button for {room_name} not found.")
 
-        # 🔑 signals that indicate real listings
-        listing_keywords = [
-            "studio",
-            "apartment",
-            "available from",
-            "rent",
-            "sqm",
-            "€"
-        ]
+        # Check for room listing elements
+        listings = driver.find_elements(By.CSS_SELECTOR, LISTING_SELECTOR)
+        found_listing = len(listings) > 0
 
-        found_listing = any(word in html for word in listing_keywords)
+        last_state = read_last_state(room_name)
 
-        last_state = read_last_state()
+        if found_listing and last_state != "yes":
+            send_telegram(f"🚨 New {room_name} listing detected on FIZZ Utrecht!")
+            write_last_state(room_name, "yes")
+        elif not found_listing and last_state != "no":
+            write_last_state(room_name, "no")
 
-        if found_listing and last_state != "new_listing":
-            send_telegram("🚨 New listing detected on THE FIZZ Utrecht!")
-            print("New listing detected — Telegram sent.")
-            write_last_state("new_listing")
-
-        elif not found_listing and last_state != "no_listings":
-            print("Listings disappeared again.")
-            write_last_state("no_listings")
-
-        else:
-            print("No change.")
+        print(f"[{time.strftime('%H:%M:%S')}] Checked {room_name}: found={found_listing}")
 
     except Exception as e:
-        print("Error checking page:", e)
-
+        print(f"Error checking {room_name}: {e}")
 
 # -------------------------
 # MAIN LOOP
 # -------------------------
-print("🚀 FIZZ checker started")
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
 
-while True:
-    check_page()
-    time.sleep(300)  # 5 minutes
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+print("🚀 FIZZ checker started")
+try:
+    while True:
+        driver.get(URL)
+        time.sleep(2)  # wait for page load
+
+        for room_name, button_text in BUTTON_TEXTS.items():
+            check_room(driver, room_name, button_text)
+
+        time.sleep(300)  # check every 5 minutes
+
+finally:
+    driver.quit()
