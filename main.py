@@ -47,27 +47,39 @@ def write_last_state(state):
 # CHECK THE PAGE
 # -------------------------
 def check_page():
-    response = requests.get(URL, headers=HEADERS)
-    text = response.text
+    try:
+        response = requests.get(URL, headers=HEADERS, timeout=20)
+        html = response.text.lower()
 
-    # 🔍 DEBUG: save HTML that Python actually receives
-    with open("debug_page.html", "w", encoding="utf-8") as f:
-        f.write(text)
+        # 🔑 signals that indicate real listings
+        listing_keywords = [
+            "studio",
+            "apartment",
+            "available from",
+            "rent",
+            "sqm",
+            "€"
+        ]
 
-    no_listing_text = "Currently no Single Studio apartments available."
-    current_state = "no_listings" if no_listing_text in text else "new_listing"
-    last_state = read_last_state()
+        found_listing = any(word in html for word in listing_keywords)
 
-    if current_state != last_state:
-        if current_state == "new_listing":
+        last_state = read_last_state()
+
+        if found_listing and last_state != "new_listing":
             send_telegram("🚨 New listing detected on THE FIZZ Utrecht!")
             print("New listing detected — Telegram sent.")
-        else:
-            print("Listings disappeared again.")
+            write_last_state("new_listing")
 
-        write_last_state(current_state)
-    else:
-        print("No change.")
+        elif not found_listing and last_state != "no_listings":
+            print("Listings disappeared again.")
+            write_last_state("no_listings")
+
+        else:
+            print("No change.")
+
+    except Exception as e:
+        print("Error checking page:", e)
+
 
 # -------------------------
 # MAIN LOOP
