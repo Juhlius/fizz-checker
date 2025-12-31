@@ -40,34 +40,27 @@ def write_last_state(state):
 # CHECK THE PAGE
 # -------------------------
 def check_page():
-    try:
-        response = requests.get(URL, timeout=20)
-        soup = BeautifulSoup(response.text, "html.parser")
-        text = soup.get_text()
+    response = requests.get(URL, headers=HEADERS)
+    text = response.text
 
-        no_listing_text = "Currently no Single Studio apartments available."
-        current_state = "no_listings" if no_listing_text in text else "new_listing"
-        last_state = read_last_state()
+    # 🔍 DEBUG: save HTML that Python actually receives
+    with open("debug_page.html", "w", encoding="utf-8") as f:
+        f.write(text)
 
-        if TEST_MODE:
-            # Force a test Telegram alert
-            send_telegram("🚨 TEST: New listing detected!")
-            print(f"[{time.strftime('%H:%M:%S')}] TEST alert sent.")
-            write_last_state("new_listing")
+    no_listing_text = "Currently no Single Studio apartments available."
+    current_state = "no_listings" if no_listing_text in text else "new_listing"
+    last_state = read_last_state()
+
+    if current_state != last_state:
+        if current_state == "new_listing":
+            send_telegram("🚨 New listing detected on THE FIZZ Utrecht!")
+            print("New listing detected — Telegram sent.")
         else:
-            # Normal operation
-            if current_state != last_state:
-                if current_state == "new_listing":
-                    send_telegram("🚨 New listing detected on THE FIZZ Utrecht!")
-                    print(f"[{time.strftime('%H:%M:%S')}] New listing detected — Telegram sent.")
-                else:
-                    print(f"[{time.strftime('%H:%M:%S')}] Listings disappeared again.")
-                write_last_state(current_state)
-            else:
-                print(f"[{time.strftime('%H:%M:%S')}] No change.")
+            print("Listings disappeared again.")
 
-    except Exception as e:
-        print(f"[{time.strftime('%H:%M:%S')}] Error checking page:", e)
+        write_last_state(current_state)
+    else:
+        print("No change.")
 
 # -------------------------
 # MAIN LOOP
